@@ -12,27 +12,22 @@ Here is what we know:
 
   1. The lexer (lex.l) is complete and working.
 
-  2. The parser compiles but drops all arguments after
-     the program name. Any command with arguments breaks
-     silently.
+  2. The parser compiles but drops all arguments after the program name. Any command with arguments breaks silently.
 
         echo "ls -l /tmp" | ./csh
         # only `ls` runs -- -l and /tmp are dropped
 
-  3. Redirect-in (<) is completely unimplemented in the
-     parser. The token is ignored.
+  3. Redirect-in (<) is completely unimplemented in the parser. The token is ignored.
 
         echo "grep stdio.h < /tmp/inc.txt" | ./csh
         # < is silently ignored
 
-  4. The interpreter handles a single command with
-     redirect-out only. It does not handle pipes at all.
+  4. The interpreter handles a single command with redirect-out only. It does not handle pipes at all.
 
         echo "ls /usr/include | grep stdio" | ./csh
         # does nothing
 
-YOUR TASKS:
------------
+OUR TASKS:
   Task 1  Run ./probe and understand what pipe() gives you.
           No code to write -- answer the three questions
           that probe prints.
