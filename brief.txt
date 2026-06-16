@@ -29,8 +29,7 @@ Here is what we know:
 
 OUR TASKS:
   Task 1  Run ./probe and understand what pipe() gives you.
-          No code to write -- answer the three questions
-          that probe prints.
+        
 
   Task 2  Fix the parser to collect all arguments.
           Find the program: block in parse() in csh.c.
