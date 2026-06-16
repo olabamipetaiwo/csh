@@ -1,0 +1,53 @@
+CONDUIT SYSTEMS -- INTERNAL MEMO
+FROM:  Engineering Manager
+TO:    On-call Systems Engineer (you)
+RE:    csh is broken -- build environment ships Friday
+
+The previous engineer left csh in a half-working state.
+Conduit's containerised build environments use csh to
+chain diagnostic commands together, and we cannot ship
+without it.
+
+Here is what we know:
+
+  1. The lexer (lex.l) is complete and working.
+
+  2. The parser compiles but drops all arguments after
+     the program name. Any command with arguments breaks
+     silently.
+
+        echo "ls -l /tmp" | ./csh
+        # only `ls` runs -- -l and /tmp are dropped
+
+  3. Redirect-in (<) is completely unimplemented in the
+     parser. The token is ignored.
+
+        echo "grep stdio.h < /tmp/inc.txt" | ./csh
+        # < is silently ignored
+
+  4. The interpreter handles a single command with
+     redirect-out only. It does not handle pipes at all.
+
+        echo "ls /usr/include | grep stdio" | ./csh
+        # does nothing
+
+YOUR TASKS:
+-----------
+  Task 1  Run ./probe and understand what pipe() gives you.
+          No code to write -- answer the three questions
+          that probe prints.
+
+  Task 2  Fix the parser to collect all arguments.
+          Find the program: block in parse() in csh.c.
+          Replace the argv[1] = NULL placeholder with a
+          loop that collects remaining STRING tokens.
+
+  Task 3  Implement redirect-in in the parser.
+          Find the /* in: handle redirect-in */ comment
+          in parse(). Add the match/consume/strdup block.
+
+  Task 4  Wire up the pipe interpreter.
+          Find the TASK 4 comment in run_commands().
+          Fork two children, wire stdin/stdout through a
+          pipe, close both ends in the parent, wait twice.
+
