@@ -7,9 +7,9 @@
 enum { READ = 0, WRITE = 1 };
 
 int main(void) {
-    int pipefd[2];
+    int pipefd[2] = {-1, -1};
 
-    printf("Before pipe(): pipefd[0]=%d, pipefd[1]=%d  (uninitialized)\n",
+    printf("Before pipe(): pipefd[0]=%d, pipefd[1]=%d\n",
            pipefd[0], pipefd[1]);
 
     if (-1 == pipe(pipefd)) {
