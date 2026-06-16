@@ -97,6 +97,8 @@ int match(token_t got, token_t want) {
  *   NOTE: after expect(), lexeme holds the text of the NEXT token.
  *   Capture strdup(lexeme) BEFORE calling expect() if you need the current text.
  */
+
+
 void expect(token_t want) {
     if (lookahead != want) {
         fprintf(stderr, "csh: parse error near '%s'\n", lexeme);
@@ -144,16 +146,15 @@ command:
          * Remember:
          *   - strdup(lexeme) before consume() to capture the text.
          *   - cmd->argv must end with a NULL entry (execvp requires it).
-         *
-         * Hint:
-         *   int argc = 1;
-         *   while (match(lookahead, STRING)) {
-         *       cmd->argv[argc++] = strdup(lexeme);
-         *       consume();
-         *   }
-         *   cmd->argv[argc] = NULL;
+         
          */
-        cmd->argv[1] = NULL; /* placeholder -- replace with loop in Task 2 */
+
+        int argc = 1;
+        while (match(lookahead, STRING)) {
+            cmd->argv[argc++] = strdup(lexeme);
+            consume();
+        }
+        cmd->argv[argc] = NULL;
 
 /* in: redirect-in */
         /*
@@ -166,6 +167,12 @@ command:
          *
          * No helper needed -- just match, consume, strdup, consume.
          */
+
+         if (match(lookahead, REDIRECT_IN)) {
+            consume();                   /* past the "<" */
+            cmd->in = strdup(lexeme);    /* capture the filename */
+            consume();                   /* past the filename */
+        }
 
 /* out: redirect-out (provided -- do not modify) */
         if (match(lookahead, REDIRECT_OUT)) {
@@ -225,37 +232,39 @@ void run_commands(void) {
         return;
     }
 
+     int pipefd[2]; 
+     pipe(pipefd);
+
+
+   /* Child 1: left side -- runs first_command */
+    switch (fork()) {
+    case 0:
+        close(pipefd[READ]);
+        dup2(pipefd[WRITE], STDOUT_FILENO);
+        close(pipefd[WRITE]);
+        execvp(first_command->argv[0], first_command->argv);
+        _exit(1);
+    }
+
+    /* Child 2: right side -- runs last_command */
+    switch (fork()) {
+    case 0:
+        close(pipefd[WRITE]);
+        dup2(pipefd[READ], STDIN_FILENO);
+        close(pipefd[READ]);
+        execvp(last_command->argv[0], last_command->argv);
+        _exit(1);
+    }
+
+    /* Parent: close both ends, then wait for both children */
+    close(pipefd[READ]);
+    close(pipefd[WRITE]);
+    wait(NULL);
+    wait(NULL);
+   
+
     /* ---- TASK 4: Two commands connected by a pipe ---- */
-    /*
-     * Connect first_command | last_command using a real Unix pipe.
-     *
-     * Steps:
-     *
-     *   1. int pipefd[2]; pipe(pipefd);
-     *
-     *   2. Fork child 1  (left side -- runs first_command):
-     *        close(pipefd[READ]);
-     *        dup2(pipefd[WRITE], STDOUT_FILENO);
-     *        close(pipefd[WRITE]);
-     *        execvp(first_command->argv[0], first_command->argv);
-     *        _exit(1);
-     *
-     *   3. Fork child 2  (right side -- runs last_command):
-     *        close(pipefd[WRITE]);
-     *        dup2(pipefd[READ], STDIN_FILENO);
-     *        close(pipefd[READ]);
-     *        execvp(last_command->argv[0], last_command->argv);
-     *        _exit(1);
-     *
-     *   4. Parent:
-     *        close(pipefd[READ]);
-     *        close(pipefd[WRITE]);
-     *        wait(NULL);
-     *        wait(NULL);
-     *
-     * Once it works, comment out the two parent close() calls and run
-     * a piped command again. What happens? Why does it hang?
-     */
+
 }
 
 /* Entry point                                                        */
@@ -266,7 +275,8 @@ int main(void) {
     parse();
 
     /* Uncomment to debug parser output before running commands: */
-    /* print_commands(); return 0; */
+    // print_commands(); 
+    // return 0;
 
     run_commands();
     free_commands();
